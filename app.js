@@ -79,7 +79,7 @@ app.get('/envelopes', (req, res, next) => {
 
 app.post("/envelopes", extractEnvelope, (req, res, next) => {
     const newEnvelope = addEnvelope(req.envelope);
-    res.status(200).send(newEnvelope);
+    res.status(201).send(newEnvelope);
 });
 
 app.param('envelopeId', (req, res, next, id) => {
@@ -92,9 +92,17 @@ app.param('envelopeId', (req, res, next, id) => {
     };
 });
 
-app.get("/envelopes/:envelopeId", (req, res, next) => {
+app.get('/envelopes/:envelopeId', (req, res, next) => {
     res.status(200).send(envelopes.find(e => e.id == req.envelopeId));
 });
+
+app.delete('/envelopes/:envelopeId', (req, res, next) => {
+    const envelopeIndex = envelopes.findIndex(e => e.id == req.envelopeId);
+    if (envelopeIndex != -1) {
+        envelopes.splice(envelopeIndex, 1);
+    };
+    res.status(204).send();
+})
 
 const server = app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT} at time ${new Date().toString()}`);
