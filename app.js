@@ -82,6 +82,20 @@ app.post("/envelopes", extractEnvelope, (req, res, next) => {
     res.status(200).send(newEnvelope);
 });
 
+app.param('envelopeId', (req, res, next, id) => {
+    const envelope = envelopes.find(e => e.id == id);
+    if (envelope) {
+        req.envelopeId = id;
+        next();
+    } else {
+        res.status(404).send('Envelope not found');
+    };
+});
+
+app.get("/envelopes/:envelopeId", (req, res, next) => {
+    res.status(200).send(envelopes.find(e => e.id == req.envelopeId));
+});
+
 const server = app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT} at time ${new Date().toString()}`);
 });
