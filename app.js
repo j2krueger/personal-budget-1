@@ -85,7 +85,7 @@ app.post("/envelopes", extractEnvelope, (req, res, next) => {
 app.param('envelopeId', (req, res, next, id) => {
     const envelope = envelopes.find(e => e.id == id);
     if (envelope) {
-        req.envelopeId = id;
+        req.envelopeId = Number(id);
         next();
     } else {
         res.status(404).send('Envelope not found');
@@ -102,6 +102,17 @@ app.delete('/envelopes/:envelopeId', (req, res, next) => {
         envelopes.splice(envelopeIndex, 1);
     };
     res.status(204).send();
+});
+
+app.put('/envelopes/:envelopeId', extractEnvelope, (req, res, next) => {
+    const envelopeIndex = envelopes.findIndex(e => e.id == req.envelopeId);
+    if (envelopeIndex == -1) {
+        res.status(404).send('Envelope not found, and how did I get here?');
+    };
+    const envelope = req.envelope;
+    envelope.id = req.envelopeId;
+    envelopes[envelopeIndex] = envelope;
+    res.status(200).send(envelope);
 })
 
 const server = app.listen(PORT, () => {
