@@ -46,7 +46,7 @@ app.get("/stop", (req, res, next) => {
 
 /* envelopes schema:
 {
-    id: integer,
+    id: number,
     name: "String",
     balance: number
 }
@@ -59,7 +59,11 @@ function addEnvelope(envelopeData) {
     newEnvelope.id = maxEnvelopeId++;
     envelopes.push(newEnvelope);
     return newEnvelope;
-}
+};
+
+function envelopeIdToIndex(envelopeId) {
+    return envelopes.findIndex(e => e.id == envelopeId);
+};
 
 const extractEnvelope = (req, res, next) => {
     try {
@@ -88,7 +92,7 @@ app.param('envelopeId', (req, res, next, id) => {
         req.envelopeId = Number(id);
         next();
     } else {
-        res.status(404).send('Envelope not found');
+        res.status(404).send('Envelope not found.');
     };
 });
 
@@ -97,7 +101,7 @@ app.get('/envelopes/:envelopeId', (req, res, next) => {
 });
 
 app.delete('/envelopes/:envelopeId', (req, res, next) => {
-    const envelopeIndex = envelopes.findIndex(e => e.id == req.envelopeId);
+    const envelopeIndex = envelopeIdToIndex(req.envelopeId);
     if (envelopeIndex != -1) {
         envelopes.splice(envelopeIndex, 1);
     };
@@ -105,15 +109,32 @@ app.delete('/envelopes/:envelopeId', (req, res, next) => {
 });
 
 app.put('/envelopes/:envelopeId', extractEnvelope, (req, res, next) => {
-    const envelopeIndex = envelopes.findIndex(e => e.id == req.envelopeId);
+    const envelopeIndex = envelopeIdToIndex(req.envelopeId);
     if (envelopeIndex == -1) {
         res.status(404).send('Envelope not found, and how did I get here?');
+        return;
     };
     const envelope = req.envelope;
     envelope.id = req.envelopeId;
     envelopes[envelopeIndex] = envelope;
     res.status(200).send(envelope);
 })
+
+app.post('/envelopes/transfer/:sourceEnvelopeId/:destEnvelopeId', (req, res, next) => {
+    const sourceIndex = envelopeIdToIndex(req.params.sourceEnvelopeId);
+    const destIndex = envelopeIdToIndex(req.params.destEnvelopeId);
+    if (sourceIndex == -1 || destIndex == -1) {
+        res.status(404).send('Envelope not found.');
+    };
+    const { amount } = extractTypedVars([{ name: 'amount', opts: 'mnf' }], req.query);
+    if (amount > envelopes[sourceIndex].balance) {
+        res.status(409).send(`Envelope ${envelopes[sourceIndex].name} doesn't have that much money in it.`);
+        return;
+    };
+    envelopes[sourceIndex].balance -= amount;
+    envelopes[destIndex].balance += amount;
+    res.status(200).send([envelopes[sourceIndex], envelopes[destIndex]]);
+});
 
 const server = app.listen(PORT, () => {
     console.log(`Server is listening on port ${PORT} at time ${new Date().toString()}`);
